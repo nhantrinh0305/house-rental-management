@@ -4,6 +4,8 @@ import com.nhan.houserentalmanagement.model.House;
 import com.nhan.houserentalmanagement.service.HouseService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.nhan.houserentalmanagement.service.UserService;
+import com.nhan.houserentalmanagement.model.User;
 
 import java.util.List;
 
@@ -12,9 +14,11 @@ import java.util.List;
 public class HouseController {
 
     private final HouseService houseService;
+    private final UserService userService;
 
-    public HouseController(HouseService houseService) {
+    public HouseController(HouseService houseService, UserService userService) {
         this.houseService = houseService;
+        this.userService = userService;
     }
 
     // Lấy danh sách tất cả houses
@@ -34,9 +38,21 @@ public class HouseController {
     // Tạo mới house
     @PostMapping
     public ResponseEntity<House> createHouse(@RequestBody House house) {
+        // Lấy landlordId từ JSON body
+        Long landlordId = house.getLandlord().getId();
+
+        // Fetch User từ DB
+        User landlord = userService.findById(landlordId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy user với id=" + landlordId));
+
+        // Set lại landlord cho house trước khi save
+        house.setLandlord(landlord);
+
+        // Lưu House
         House saved = houseService.save(house);
         return ResponseEntity.ok(saved);
     }
+
 
     // Cập nhật house
     @PutMapping("/{id}")
